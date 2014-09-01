@@ -1,0 +1,47 @@
+Before performing this, we have to login into a amazon linux machine and set up for environment variables namely,
+
+
+EC2_ACCESS_KEY
+EC2_SECRET_KEY
+EC2_CERT
+EC2_PRIVATE_KEY.
+ 
+These variables has to be added in .bashrc file. 
+
+
+Then these auto scaling commands has to be given sequentially. 
+
+
+Creating a launch configuraiton
+
+as-create-launch-config my_test_lc --region us-west-2 --image-id ami-d03ea1e0  --group quick-start-1 --key Rafica-KeyPair  --instance-type t1.micro
+
+Creating auto scaling group
+
+as-create-auto-scaling-group my_test_asg --region us-west-2 --launch-configuration my_test_lc --availability-zones us-west-2a --min-size 1 --max-size 3 --desired-capacity 1
+
+Describing auto scaling group
+
+as-describe-auto-scaling-groups my-test-asg --region us-west-2 --headers
+
+
+Setting up auto scaling policy-  scaling up
+
+as-put-scaling-policy -auto-scaling-group my-test-asg -name scale-up --adjustment 1 --type ChangeInCapacity --cooldown 100 --region us-west-2
+
+setting up auto scaling policy - scaling down
+
+as-put-scaling-policy -auto-scaling-group my-test-asg -name scale-down --adjustment=-1 --type ChangeInCapacity --cooldown 100 --region us-west-2
+
+setting up alarm, threshold - scaling up
+
+mon-put-metric-alarm --alarm-name sample-scale-up --alarm-description "scale up to 10% load" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 60 --threshold 10 --comparison-operator GreaterThanThreshold --dimensions InstanceId=i-37df4203 --evaluation-periods 1 --unit Percent --alarm-actions "arn:aws:autoscaling:us-west-2:387390347000:scalingPolicy:8e370b37-0cf2-40ee-b764-f2c545e87364:autoScalingGroupName/my-test-asg:policyName/scale-up" --region us-west-2
+
+
+
+ setting up alarm, threshold - scaling down
+mon-put-metric-alarm --alarm-name sample-scale-down --alarm-description "scale down to 20% load" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 60 --threshold 20 --comparison-operator LessThanThreshold --dimensions InstanceId=i-b07fc084 --evaluation-periods 1 --unit Percent --alarm-actions "arn:aws:autoscaling:us-west-2:387390347000:scalingPolicy:cac5d7a4-a4db-4a65-9d63-77d515c6fdbe:autoScalingGroupName/my-test-asg:policyName/scale-down" --region us-west-2
+
+
+
+Now we should generate cpu load to cross threshold and check for scaling up new instances in aws management console. Similarly we have to reduce the cpu loads and make it fall under threshold and check for scaling down of instances which were already running. 
